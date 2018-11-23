@@ -5,13 +5,19 @@
 #ifndef EX3_PARSER_H
 #define EX3_PARSER_H
 
+// bullet's type
 #define NUMBER 0
 #define OPERATOR 1
+#define LEFT_PARENTHESIS 2
+#define RIGHT_PARENTHESIS 3
+
+// math operator
 #define  ADDITION 0
 #define MINUS 1
 #define MULTIPLICATION 2
 #define DIVISION 3
 #define POWER 4
+
 
 
 

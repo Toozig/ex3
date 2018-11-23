@@ -50,20 +50,18 @@ int push(Stack* stack, void *data)
     return 0;
 }
 
-void pop(Stack* stack, void *headData)
+void * pop(Stack* stack)
 {
     assert(stack != NULL);
     if(stack->_top == NULL)
     {
         fprintf(stderr, "The stack is empty\n");
-        return;
+        return NULL;
     }
-
     Node *node = stack->_top;
-    memcpy(headData, node->_data,stack->_elementSize);
     stack->_top = node->_next;
-    free(node->_data);
     free(node);
+    return node->_data;
 }
 
 int isEmptyStack(Stack* stack)
