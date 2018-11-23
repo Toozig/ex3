@@ -10,12 +10,12 @@
 
 #define GROW_FACTOR 10
 
-size_t ParseNumber(const char *infix, Bullet **bullets, size_t *numOfBullets, size_t i);
-
-size_t *leftParenthesisFunc(Bullet **bullets, size_t *numOfBullets, Stack *stack);
-
-size_t *addOperator(Bullet **bullets, size_t *numOfBullets, Stack *stack, Bullet *bullet);
-
+/**
+ * This function create the struct which is the format for the postfix array
+ * @param data  - the data of the struct
+ * @param type  what kind of bullet this is- number/ operator etc..
+ * @return
+ */
 Bullet *createBullet(int data, int type)
 {
     Bullet *bullet = (Bullet *) malloc(sizeof(Bullet));
@@ -30,6 +30,11 @@ Bullet *createBullet(int data, int type)
 
 }
 
+/**
+ * This function create Operator struct for the postfix array
+ * @param operator  the char representing the math operator
+ * @return  struct to be added to the stack / postfix array
+ */
 Bullet *createOperator(char operator)
 {
     int data;
@@ -57,74 +62,27 @@ Bullet *createOperator(char operator)
     return createBullet(data, OPERATOR);
 }
 
-size_t ParseNumber(const char *infix, Bullet **bullets, size_t *numOfBullets, size_t i)
+/**
+ *  this function adds number to the postfix array.
+ */
+int ParseNumber(const char *infix, Bullet *bullets[100], const size_t numOfBullets, size_t *i)
 {
     int num;
-    sscanf(&infix[i], "%d", &num);
-    int add;
-    while (isdigit(infix[i + 1]))
+    sscanf(&infix[*i], "%d", &num);
+    while ( *i + 1 < strlen(infix) && isdigit(infix[*i + 1]))
     {
-        i++;
-        sscanf(&infix[i], "%d", &add);
-        num *= GROW_FACTOR;
-        num += add;
+        *i += 1;
     }
     Bullet *bullet = createBullet(num, NUMBER);
     if (bullet == NULL)
     {
-
-    }
-    bullets[*numOfBullets] = bullet;
-
-    return i;
-}
-
-int ParseInfix(char *infix, Bullet **bullets, size_t *numOfBullets)
-{
-    Stack *stack = stackAlloc(sizeof(Bullet));
-    if (stack == NULL)
-    {
-        fprintf(stderr, "ERROR memory alloc problem");
         return 1;
     }
-    size_t i;
-    for (i = 0; i < strlen(infix); i++)
-    {
-        if (isdigit(infix[i]))
-        {
-            i = ParseNumber(infix, bullets, numOfBullets, i);
-            numOfBullets++;
-        } else if (infix[i] == ' ')
-        {
-            continue;
-        } else if (infix[i] == '(')
-        {
-            Bullet *bullet = createBullet(0, RIGHT_PARENTHESIS);
-            if (bullet == NULL)
-            {
-                return 1;
-            }
-            push(stack, bullet);
-        } else if (infix[i] == ')')
-        {
-            numOfBullets = leftParenthesisFunc(bullets, numOfBullets, stack);
-        } else
-        {
-            Bullet *bullet = createOperator(infix[i]);
-            if (bullet == NULL)
-            {
-                return 0;
-            }
-            numOfBullets = addOperator(bullets, numOfBullets, stack, bullet);
-        }
-    }
-    while (!isEmptyStack(stack))
-    {
-        Bullet *bullet = pop(stack);
-        bullets[*numOfBullets] = bullet;
-        numOfBullets++;
-    }
+    bullets[numOfBullets] = bullet;
+
+    return 0;
 }
+
 
 /**
  * This function checks if the precedence of the operator is bigger to the precedence of thetop elemnt
@@ -136,32 +94,36 @@ int precedenceIsGreater(Bullet *operator, Bullet *top)
 {
     if (operator->type == top->type)
     {
-       switch (operator->data)
-       {
-           case MULTIPLICATION:
-           case DIVISION:
-               if(top->data == MINUS || top->data == ADDITION)
-               {
-                   return 0;
-               }
-               break;
-           case POWER:
-               if(top->data != POWER)
-               {
-                   return 0;
-               }
-           default:
-               break;
-       }
+        switch (operator->data)
+        {
+            case MULTIPLICATION:
+            case DIVISION:
+                if (top->data == MINUS || top->data == ADDITION)
+                {
+                    return 0;
+                }
+                break;
+            case POWER:
+                if (top->data != POWER)
+                {
+                    return 0;
+                }
+            default:
+                break;
+        }
     }
     return 1;
 }
 
-size_t *addOperator(Bullet **bullets, size_t *numOfBullets, Stack *stack, Bullet *bullet)
+/**
+ * this function adds operator to the postfix array
+ */
+size_t *addOperator(Bullet *bullets[100], size_t *numOfBullets, Stack *stack, Bullet *bullet)
 {
     if (isEmptyStack(stack))
     {
         push(stack, bullet);
+        return numOfBullets;
     }
     Bullet *topElement = stack->_top->_data;
     if (topElement->type == LEFT_PARENTHESIS)
@@ -170,7 +132,8 @@ size_t *addOperator(Bullet **bullets, size_t *numOfBullets, Stack *stack, Bullet
     } else
     {
         while (!isEmptyStack(stack) &&
-               topElement->type != '(' && precedenceIsGreater(bullet, topElement)) //todo check if this function work
+               topElement->type != LEFT_PARENTHESIS &&
+               precedenceIsGreater(bullet, topElement)) //todo check if this function work
         {
             Bullet *poped = pop(stack);
             bullets[*numOfBullets] = poped;
@@ -185,22 +148,117 @@ size_t *addOperator(Bullet **bullets, size_t *numOfBullets, Stack *stack, Bullet
 /**
  * This function preform the part of the algorithm if a left parenthesis is met
  */
-size_t *leftParenthesisFunc(Bullet **bullets, size_t *numOfBullets, Stack *stack)
+size_t *leftParenthesisFunc(Bullet *bullets[100], size_t *numOfBullets, Stack *stack)
 {
-    while (isEmptyStack(stack))
+    while (!isEmptyStack(stack))
     {
         Bullet *bullet = pop(stack);
-        if (bullet->data == '(')
+        if (bullet->type == LEFT_PARENTHESIS)
         {
             free(bullet);
             break;
         }
         bullets[*numOfBullets] = bullet;
-        numOfBullets++;
+        *numOfBullets += 1;
     }
     return numOfBullets;
 }
 
+
 /**
- * this function parse a digit char in the given input
+ * This function turns the infix into postfix
+ * @param infix the infix string
+ * @param bullets the postfix array
+ * @param numOfBullets the number of elements in the array
+ * @return 0 if all did right, 1 otherwise
  */
+int parseInfix(char *infix, Bullet *bullets[100], size_t *numOfBullets)
+{
+    Stack *stack = stackAlloc(sizeof(Bullet));
+    if (stack == NULL)
+    {
+        fprintf(stderr, "ERROR memory alloc problem");
+        return 1;
+    }
+    size_t i;
+    for (i = 0; i < strlen(infix); i++)
+    {
+        if (isdigit(infix[i]))
+        {
+            if (ParseNumber(infix, bullets, *numOfBullets, &i))
+            {
+                return 1;
+            }
+            *numOfBullets += 1;
+        } else if (infix[i] == ' ')
+        {
+            continue;
+        } else if (infix[i] == '(')
+        {
+            Bullet *bullet = createBullet(0, LEFT_PARENTHESIS);
+            if (bullet == NULL)
+            {
+                return 1;
+            }
+            push(stack, bullet);
+        } else if (infix[i] == ')')
+        {
+            numOfBullets = leftParenthesisFunc(bullets, numOfBullets, stack);
+        } else
+        {
+            Bullet *bullet = createOperator(infix[i]);
+            if (bullet == NULL)
+            {
+                return 1;
+            }
+            numOfBullets = addOperator(bullets, numOfBullets, stack, bullet);
+        }
+    }
+    while (!isEmptyStack(stack))
+    {
+        Bullet *bullet = pop(stack);
+        if (bullet->type == LEFT_PARENTHESIS)
+        {
+            fprintf(stderr, "ERROR input format error");
+            return 1;
+        }
+        bullets[*numOfBullets] = bullet;
+        *numOfBullets += 1;
+    }
+    free(stack);
+    return 0;
+}
+
+void printpostfix(Bullet* bullets[100], size_t numOfBullets)
+{
+    size_t i;
+    for (i = 0; i < numOfBullets; ++i)
+    {
+        if (bullets[i]->type == NUMBER)
+        {
+            printf("%d ", bullets[i]->data);
+        }
+        else
+        {
+            switch(bullets[i]->data)
+            {
+                case MINUS:
+                    printf("%s ", "- ");
+                    break;
+                case ADDITION:
+                    printf("%s ", "+ ");
+                    break;
+                case MULTIPLICATION:
+                    printf("%s ", "* ");
+                    break;
+                case POWER:
+                    printf("%s ", "^ ");
+                    break;
+                default:
+                    printf("%s ", "/ ");
+                    break;
+            }
+        }
+
+    }
+}

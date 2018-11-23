@@ -43,8 +43,7 @@ int push(Stack* stack, void *data)
     {
         return 1;
     }
-    node->_data = malloc(stack->_elementSize);
-    memcpy(node->_data, data, stack->_elementSize);
+    node->_data = data;
     node->_next = stack->_top;
     stack->_top = node;
     return 0;
@@ -60,8 +59,9 @@ void * pop(Stack* stack)
     }
     Node *node = stack->_top;
     stack->_top = node->_next;
+    void * data = node->_data;
     free(node);
-    return node->_data;
+    return data;
 }
 
 int isEmptyStack(Stack* stack)

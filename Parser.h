@@ -2,6 +2,7 @@
 // Created by toozi on 11/23/2018.
 //
 
+#include <stdio.h>
 #ifndef EX3_PARSER_H
 #define EX3_PARSER_H
 
@@ -9,7 +10,6 @@
 #define NUMBER 0
 #define OPERATOR 1
 #define LEFT_PARENTHESIS 2
-#define RIGHT_PARENTHESIS 3
 
 // math operator
 #define  ADDITION 0
@@ -26,5 +26,9 @@ typedef struct Bullet
     int type;
     int data;
 } Bullet;
+
+
+int parseInfix(char *infix, Bullet *bullets[100], size_t *numOfBullets);
+void printpostfix(Bullet *bullets[100], size_t numOfBullets);
 
 #endif //EX3_PARSER_H
