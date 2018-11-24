@@ -1,6 +1,7 @@
 #ifndef STACK_H
 #define STACK_H
 
+
 #include <stdlib.h>
 
 typedef struct Node
@@ -21,7 +22,7 @@ void freeStack(Stack** stack);
 
 int push(Stack* stack, void *data);
 
-void *pop(Stack* stack);
+void * pop(Stack* stack);
 
 int isEmptyStack(Stack* stack);
 

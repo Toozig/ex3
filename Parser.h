@@ -5,6 +5,7 @@
 #include <stdio.h>
 #ifndef EX3_PARSER_H
 #define EX3_PARSER_H
+#define MAX_CHAR_IN_LINE 100
 
 // bullet's type
 #define NUMBER 0
@@ -28,7 +29,7 @@ typedef struct Bullet
 } Bullet;
 
 
-int parseInfix(char *infix, Bullet *bullets[100], size_t *numOfBullets);
-void printpostfix(Bullet *bullets[100], size_t numOfBullets);
+int parseInfix(char *infix, Bullet *bullets[MAX_CHAR_IN_LINE], size_t *numOfBullets);
+void printInfo(Bullet **bullets, size_t numOfBullets, char * infix);
 
 #endif //EX3_PARSER_H

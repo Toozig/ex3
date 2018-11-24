@@ -37,7 +37,6 @@ void freeStack(Stack** stack)
 
 int push(Stack* stack, void *data)
 {
-    //you should check allocation success
     Node* node = (Node*)malloc(sizeof(Node));
     if (node == NULL)
     {
@@ -51,7 +50,6 @@ int push(Stack* stack, void *data)
 
 void * pop(Stack* stack)
 {
-    assert(stack != NULL);
     if(stack->_top == NULL)
     {
         fprintf(stderr, "The stack is empty\n");
@@ -66,6 +64,5 @@ void * pop(Stack* stack)
 
 int isEmptyStack(Stack* stack)
 {
-    assert(stack != NULL);
     return stack->_top == NULL;
 }

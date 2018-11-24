@@ -4,11 +4,9 @@
 
 #include "Parser.h"
 #include <stdio.h>
-#include <mem.h>
 #include <ctype.h>
+#include <mem.h>
 #include "stack.h"
-
-#define GROW_FACTOR 10
 
 /**
  * This function create the struct which is the format for the postfix array
@@ -65,7 +63,7 @@ Bullet *createOperator(char operator)
 /**
  *  this function adds number to the postfix array.
  */
-int ParseNumber(const char *infix, Bullet *bullets[100], const size_t numOfBullets, size_t *i)
+int ParseNumber(const char *infix, Bullet *bullets[MAX_CHAR_IN_LINE], const size_t numOfBullets, size_t *i)
 {
     int num;
     sscanf(&infix[*i], "%d", &num);
@@ -94,7 +92,7 @@ int precedenceIsGreater(Bullet *operator, Bullet *top)
 {
     if (operator->type == top->type)
     {
-        switch (operator->data)
+        switch ( (int) operator->data)
         {
             case MULTIPLICATION:
             case DIVISION:
@@ -118,12 +116,12 @@ int precedenceIsGreater(Bullet *operator, Bullet *top)
 /**
  * this function adds operator to the postfix array
  */
-size_t *addOperator(Bullet *bullets[100], size_t *numOfBullets, Stack *stack, Bullet *bullet)
+void addOperator(Bullet *bullets[MAX_CHAR_IN_LINE], size_t *numOfBullets, Stack *stack, Bullet *bullet)
 {
     if (isEmptyStack(stack))
     {
         push(stack, bullet);
-        return numOfBullets;
+        return;
     }
     Bullet *topElement = stack->_top->_data;
     if (topElement->type == LEFT_PARENTHESIS)
@@ -137,31 +135,31 @@ size_t *addOperator(Bullet *bullets[100], size_t *numOfBullets, Stack *stack, Bu
         {
             Bullet *poped = pop(stack);
             bullets[*numOfBullets] = poped;
-            numOfBullets++;
-            topElement = stack->_top->_data;
+            *numOfBullets += 1;
+            topElement = isEmptyStack(stack)? 0: stack->_top->_data;
         }
         push(stack, bullet);
     }
-    return numOfBullets;
 }
 
 /**
  * This function preform the part of the algorithm if a left parenthesis is met
  */
-size_t *leftParenthesisFunc(Bullet *bullets[100], size_t *numOfBullets, Stack *stack)
+int leftParenthesisFunc(Bullet *bullets[MAX_CHAR_IN_LINE], size_t *numOfBullets, Stack *stack)
 {
-    while (!isEmptyStack(stack))
+    Bullet *bullet = pop(stack);
+    while (bullet->type != LEFT_PARENTHESIS)
     {
-        Bullet *bullet = pop(stack);
-        if (bullet->type == LEFT_PARENTHESIS)
-        {
-            free(bullet);
-            break;
-        }
         bullets[*numOfBullets] = bullet;
         *numOfBullets += 1;
+        if (isEmptyStack(stack))
+        {
+            fprintf(stderr, "ERROR Input format error");
+            return 1;
+        }
+        bullet = pop(stack);
     }
-    return numOfBullets;
+    return 0;
 }
 
 
@@ -172,7 +170,7 @@ size_t *leftParenthesisFunc(Bullet *bullets[100], size_t *numOfBullets, Stack *s
  * @param numOfBullets the number of elements in the array
  * @return 0 if all did right, 1 otherwise
  */
-int parseInfix(char *infix, Bullet *bullets[100], size_t *numOfBullets)
+int parseInfix(char *infix, Bullet *bullets[MAX_CHAR_IN_LINE], size_t *numOfBullets)
 {
     Stack *stack = stackAlloc(sizeof(Bullet));
     if (stack == NULL)
@@ -181,7 +179,8 @@ int parseInfix(char *infix, Bullet *bullets[100], size_t *numOfBullets)
         return 1;
     }
     size_t i;
-    for (i = 0; i < strlen(infix); i++)
+    Bullet *bullet;
+    for (i = 0; i < strlen(infix) -1; i++)
     {
         if (isdigit(infix[i]))
         {
@@ -190,33 +189,38 @@ int parseInfix(char *infix, Bullet *bullets[100], size_t *numOfBullets)
                 return 1;
             }
             *numOfBullets += 1;
-        } else if (infix[i] == ' ')
-        {
             continue;
-        } else if (infix[i] == '(')
+        }
+        switch (infix[i])
         {
-            Bullet *bullet = createBullet(0, LEFT_PARENTHESIS);
-            if (bullet == NULL)
-            {
-                return 1;
-            }
-            push(stack, bullet);
-        } else if (infix[i] == ')')
-        {
-            numOfBullets = leftParenthesisFunc(bullets, numOfBullets, stack);
-        } else
-        {
-            Bullet *bullet = createOperator(infix[i]);
-            if (bullet == NULL)
-            {
-                return 1;
-            }
-            numOfBullets = addOperator(bullets, numOfBullets, stack, bullet);
+            case ' ':
+                continue;
+            case '(':
+                bullet = createBullet(0, LEFT_PARENTHESIS);
+                if (bullet == NULL)
+                {
+                    return 1;
+                }
+                push(stack, bullet);
+                break;
+            case ')':
+                if(leftParenthesisFunc(bullets, numOfBullets, stack))
+                {
+                    return 1;
+                }
+                break;
+            default:
+                bullet = createOperator(infix[i]);
+                if (bullet == NULL)
+                {
+                    return 1;
+                }
+                addOperator(bullets, numOfBullets, stack, bullet);
         }
     }
     while (!isEmptyStack(stack))
     {
-        Bullet *bullet = pop(stack);
+        bullet = pop(stack);
         if (bullet->type == LEFT_PARENTHESIS)
         {
             fprintf(stderr, "ERROR input format error");
@@ -225,22 +229,36 @@ int parseInfix(char *infix, Bullet *bullets[100], size_t *numOfBullets)
         bullets[*numOfBullets] = bullet;
         *numOfBullets += 1;
     }
-    free(stack);
+    freeStack(&stack);
     return 0;
 }
 
-void printpostfix(Bullet* bullets[100], size_t numOfBullets)
+/**
+ * This function prtins postfix calculation.
+ * @param bullets
+ * @param numOfBullets
+ */
+void printInfo(Bullet **bullets, size_t numOfBullets, char * infix)
 {
     size_t i;
+    printf("%s", "Infix: ");
+    for(i =  0; i < strlen(infix) ; i++)
+    {
+        if(infix[i] != ' ')
+        {
+            printf(" %c", infix[i] );
+        }
+    }
+    printf("%s", "Postfix: ");
     for (i = 0; i < numOfBullets; ++i)
     {
         if (bullets[i]->type == NUMBER)
         {
-            printf("%d ", bullets[i]->data);
+            printf("%d ", (int) bullets[i]->data);
         }
         else
         {
-            switch(bullets[i]->data)
+            switch((int) bullets[i]->data)
             {
                 case MINUS:
                     printf("%s ", "- ");
@@ -261,4 +279,5 @@ void printpostfix(Bullet* bullets[100], size_t numOfBullets)
         }
 
     }
+    printf("\n");
 }
